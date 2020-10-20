@@ -142,3 +142,6 @@ data
 
 # Logdir path
 logdir
+
+# pretrained ckpt path
+pretrained_ckpts
