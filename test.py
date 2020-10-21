@@ -21,9 +21,9 @@ import slowfast.datasets.dataloader as dataloader
 def perform_test(test_dloader, model, cfg):
     model.eval()
     ens_number = cfg.TEST.NUM_ENSEMBLE_VIEWS * cfg.TEST.NUM_SPATIAL_CROPS
-    vid2logits = {}
-    vid2label = {}
-    idx2label = test_dloader.dataset.idx2label
+    # Collect predictions
+    collect_pred = []
+    collect_vids = []
     for cur_iter, (inputs, labels, vids, meta) in enumerate(tqdm(test_dloader, ncols=80)):
         # Transfer the data to the current GPU device.
         if cfg.NUM_GPUS:
@@ -33,8 +33,20 @@ def perform_test(test_dloader, model, cfg):
             else:
                 inputs = inputs.cuda(non_blocking=cfg.DATA_LOADER.PIN_MEMORY)
         with torch.no_grad():
-            preds = model(inputs)
+            preds = model(inputs)    
             preds = preds.cpu()
+        collect_pred.append(preds)
+        collect_vids.append(vids)
+    # Make vid2label
+    idx2label, label2idx = test_dloader.dataset.idx2label, test_dloader.dataset.label2idx
+    test_datas = test_dloader.dataset.data
+    vid2label = {}
+    for label, vid, _ in test_datas:
+        if vid not in vid2label:
+            vid2label[vid] = torch.LongTensor([label2idx[label]])
+    # Gather vid2logits
+    vid2logits = {}
+    for preds, vids in tqdm(zip(collect_pred, collect_vids)):
         B = preds.size(0)
         for b in range(B):
             if vids[b] not in vid2logits:
@@ -44,10 +56,10 @@ def perform_test(test_dloader, model, cfg):
                     vid2logits[vids[b]] += preds[b]
                 elif cfg.TEST.ENSEMBLE_METHOD == 'max':
                     vid2logits[vids[b]], _ = torch.stack((vid2logits[vids[b]], preds[b])).max(0)
-            vid2label[vids[b]] = labels[b]
-
+    # Calculate accuracy
     results = defaultdict(list)
     for vid in vid2label:
+        #vid2logits[vid] = torch.tensor(vid2logits[vid])
         if cfg.TEST.ENSEMBLE_METHOD == 'sum':
             vid2logits[vid] = vid2logits[vid] / ens_number
         preds = vid2logits[vid].unsqueeze(0)
