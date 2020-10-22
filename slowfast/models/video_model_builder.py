@@ -160,7 +160,8 @@ class SlowFast(nn.Module):
         """
         super(SlowFast, self).__init__()
         self.norm_module = get_norm(cfg)
-        self.enable_detection = cfg.DETECTION.ENABLE
+        self.enable_detection = (cfg.DETECTION.ENABLE 
+                                 and cfg.DETECTION.HEAD_MODULE == 'roi')
         self.num_pathways = 2
         self._construct_network(cfg)
         init_helper.init_weights(
@@ -335,7 +336,7 @@ class SlowFast(nn.Module):
             norm_module=self.norm_module,
         )
 
-        if cfg.DETECTION.ENABLE:
+        if self.enable_detection:
             self.head = head_helper.ResNetRoIHead(
                 dim_in=[
                     width_per_group * 32,
@@ -365,22 +366,22 @@ class SlowFast(nn.Module):
                     width_per_group * 32 // cfg.SLOWFAST.BETA_INV,
                 ],
                 num_classes=cfg.MODEL.NUM_CLASSES,
-                pool_size=[None, None]
-                if cfg.MULTIGRID.SHORT_CYCLE
-                else [
-                    [
-                        cfg.DATA.NUM_FRAMES
-                        // cfg.SLOWFAST.ALPHA
-                        // pool_size[0][0],
-                        cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[0][1],
-                        cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[0][2],
-                    ],
-                    [
-                        cfg.DATA.NUM_FRAMES // pool_size[1][0],
-                        cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[1][1],
-                        cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[1][2],
-                    ],
-                ],  # None for AdaptiveAvgPool3d((1, 1, 1))
+                pool_size=[None, None],  # None for AdaptiveAvgPool3d((1, 1, 1))
+                #if cfg.MULTIGRID.SHORT_CYCLE
+                #else [
+                #    [
+                #        cfg.DATA.NUM_FRAMES
+                #        // cfg.SLOWFAST.ALPHA
+                #        // pool_size[0][0],
+                #        cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[0][1],
+                #        cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[0][2],
+                #    ],
+                #    [
+                #        cfg.DATA.NUM_FRAMES // pool_size[1][0],
+                #        cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[1][1],
+                #        cfg.DATA.TRAIN_CROP_SIZE // 32 // pool_size[1][2],
+                #    ],
+                #],  
                 dropout_rate=cfg.MODEL.DROPOUT_RATE,
                 act_func=cfg.MODEL.HEAD_ACT,
             )

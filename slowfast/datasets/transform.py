@@ -117,6 +117,38 @@ def random_crop(images, size, boxes=None):
 
     return cropped, cropped_boxes
 
+def box_crop(images, size, boxes=None):
+    """
+    Crop image using box coordinate centor
+    Args:
+        images (tensor): images to perform random crop. The dimension is
+            `num frames` x `channel` x `height` x `width`.
+        size (int): the size of height and width to crop on the image.
+        boxes (ndarray or None): optional. Corresponding boxes to images.
+            Dimension is `num boxes` x 4.
+    Returns:
+        cropped (tensor): cropped images with dimension of
+            `num frames` x `channel` x `size` x `size`.
+        cropped_boxes (ndarray or None): the cropped boxes with dimension of
+            `num boxes` x 4.
+    """    
+    assert (boxes is not None), "Box is not given"
+    h, w = images.size(2), images.size(3)
+    x1, y1, x2, y2 = boxes[0]
+    box_center_x = (x1 + x2) / 2
+    box_center_y = (y1 + y2) / 2
+    x_offset = min(max(int(math.ceil(box_center_x - size / 2)), 0), w - size)
+    y_offset = min(max(int(math.ceil(box_center_y - size / 2)), 0), h - size)
+    
+    cropped = images[
+        :, :, y_offset : y_offset + size, x_offset : x_offset + size
+    ]
+
+    cropped_boxes = (
+        crop_boxes(boxes, x_offset, y_offset) if boxes is not None else None
+    )
+    return cropped, cropped_boxes
+
 
 def horizontal_flip(prob, images, boxes=None):
     """

@@ -22,7 +22,7 @@ def train_epoch(train_dloader, model, optimizer, cur_epoch, cfg):
     model.train()
     train_tqdm = tqdm(train_dloader, ncols=80)
     data_size = len(train_dloader)
-    for cur_iter, (inputs, labels, _, meta) in enumerate(train_tqdm):
+    for cur_iter, (inputs, labels, _, extra_data) in enumerate(train_tqdm):
         # Transfer the data to the current GPU device.
         if cfg.NUM_GPUS:
             if isinstance(inputs, (list,)):
@@ -31,12 +31,21 @@ def train_epoch(train_dloader, model, optimizer, cur_epoch, cfg):
             else:
                 inputs = inputs.cuda(non_blocking=True)
             labels = labels.cuda()
+            for key, val in extra_data.items():
+                if isinstance(val, (list,)):
+                    for i in range(len(val)):
+                        val[i] = val[i].cuda(non_blocking=True)
+                else:
+                    extra_data[key] = val.cuda(non_blocking=True)
                     
         # Update the learning rate.
         lr = optim.get_epoch_lr(cur_epoch + float(cur_iter) / data_size, cfg)
         optim.set_lr(optimizer, lr)
         
-        preds = model(inputs)
+        if cfg.DETECTION.ENABLE:
+            preds = model(inputs, extra_data["boxes"])
+        else:
+            preds = model(inputs)
             
         # Explicitly declare reduction to mean.
         loss_fun = losses.get_loss_func(cfg.MODEL.LOSS_FUNC)(reduction="mean")
@@ -55,7 +64,7 @@ def train_epoch(train_dloader, model, optimizer, cur_epoch, cfg):
 def eval_epoch(val_dloader, model, cur_epoch, cfg):
     model.eval()
     results = defaultdict(list)
-    for cur_iter, (inputs, labels, _, meta) in enumerate(tqdm(val_dloader, ncols=80)):
+    for cur_iter, (inputs, labels, _, extra_data) in enumerate(tqdm(val_dloader, ncols=80)):
         # Transfer the data to the current GPU device.
         if cfg.NUM_GPUS:
             if isinstance(inputs, (list,)):
@@ -64,8 +73,17 @@ def eval_epoch(val_dloader, model, cur_epoch, cfg):
             else:
                 inputs = inputs.cuda(non_blocking=True)
             labels = labels.cuda()
+            for key, val in extra_data.items():
+                if isinstance(val, (list,)):
+                    for i in range(len(val)):
+                        val[i] = val[i].cuda(non_blocking=True)
+                else:
+                    extra_data[key] = val.cuda(non_blocking=True)
         with torch.no_grad():
-            preds = model(inputs)
+            if cfg.DETECTION.ENABLE:
+                preds = model(inputs, extra_data["boxes"])
+            else:
+                preds = model(inputs)
         top1_tensor, top5_tensor = metrics.topks_correct(preds, labels, (1, 5))
         if cfg.NUM_GPUS:
             top1_tensor, top5_tensor = top1_tensor.cpu(), top5_tensor.cpu()

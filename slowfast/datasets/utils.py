@@ -316,12 +316,3 @@ def create_sampler(dataset, shuffle, cfg):
     sampler = DistributedSampler(dataset) if cfg.NUM_GPUS > 1 else None
 
     return sampler
-
-
-def loader_worker_init_fn(dataset):
-    """
-    Create init function passed to pytorch data loader.
-    Args:
-        dataset (torch.utils.data.Dataset): the given dataset.
-    """
-    return None
