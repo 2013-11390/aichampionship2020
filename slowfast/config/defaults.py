@@ -448,7 +448,7 @@ _C.DETECTION.ENABLE = False
 # Aligned version of RoI. More details can be found at slowfast/models/head_helper.py
 _C.DETECTION.ALIGNED = True
 
-# Spatial scale factor.
+# Spatial scale factor. (crop_size / feature_dim)
 _C.DETECTION.SPATIAL_SCALE_FACTOR = 16
 
 # RoI tranformation resolution.
@@ -459,6 +459,9 @@ _C.DETECTION.THRESHOLD = 0.9
 
 # Use only human
 _C.DETECTION.ONLYHUMAN = True
+
+# Head gp: global pool, roi: roi, fuse: use both
+_C.DETECTION.HEAD_MODULE = "roi"
 
 # ---------------------------------------------------------------------------- #
 # Multigrid training options
