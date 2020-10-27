@@ -24,7 +24,7 @@ def perform_test(test_dloader, model, cfg):
     # Collect predictions
     collect_pred = []
     collect_vids = []
-    for cur_iter, (inputs, labels, vids, meta) in enumerate(tqdm(test_dloader, ncols=80)):
+    for cur_iter, (inputs, labels, vids, extra_data) in enumerate(tqdm(test_dloader, ncols=80)):
         # Transfer the data to the current GPU device.
         if cfg.NUM_GPUS:
             if isinstance(inputs, (list,)):
@@ -32,8 +32,17 @@ def perform_test(test_dloader, model, cfg):
                     inputs[i] = inputs[i].cuda(non_blocking=cfg.DATA_LOADER.PIN_MEMORY)
             else:
                 inputs = inputs.cuda(non_blocking=cfg.DATA_LOADER.PIN_MEMORY)
+            for key, val in extra_data.items():
+                if isinstance(val, (list,)):
+                    for i in range(len(val)):
+                        val[i] = val[i].cuda(non_blocking=True)
+                else:
+                    extra_data[key] = val.cuda(non_blocking=True)
         with torch.no_grad():
-            preds = model(inputs)    
+            if cfg.DETECTION.ENABLE:
+                preds = model(inputs, extra_data["boxes"])
+            else:
+                preds = model(inputs)  
             preds = preds.cpu()
         collect_pred.append(preds)
         collect_vids.append(vids)
