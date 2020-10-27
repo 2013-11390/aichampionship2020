@@ -54,6 +54,8 @@ class KDX(torch.utils.data.Dataset):
             self.train_data = json_data
             self.data = list(range(len(json_data))) * self.cfg.DATA.SAMPLING # 1epoch: 25 x 200 samples
         elif self.split == 'test':
+            if self.cfg.DETECTION.ENABLE:
+                assert (self.cfg.TEST.NUM_SPATIAL_CROPS == 1), "NUM_SPATIAL_CROPS should be 1"
             for elem in json_data:
                 label = elem['label']
                 for vid in elem['vids']:
@@ -116,7 +118,7 @@ class KDX(torch.utils.data.Dataset):
             spatial_sample_index = -1
             min_scale, max_scale = self.cfg.DATA.TRAIN_JITTER_SCALES
             crop_size = self.cfg.DATA.TRAIN_CROP_SIZE
-        elif e_idx == -2:
+        elif e_idx == -2 or self.cfg.TEST.NUM_SPATIAL_CROPS == 1:
             spatial_sample_index = 1
             min_scale, max_scale, crop_size = 256, 256, self.cfg.DATA.TRAIN_CROP_SIZE
         else:
@@ -183,14 +185,14 @@ class KDX(torch.utils.data.Dataset):
                 start = int(round(gap))
         else:
             if len(enable_frms) > 0:
-                temporal_sample_index = e_idx // self.cfg.TEST.NUM_SPATIAL_CROPS
+                temporal_sample_index = e_idx
                 gap = float(len(enable_frms)) / (
                     self.cfg.TEST.NUM_ENSEMBLE_VIEWS - 1
                 )
                 fidx, boxes = enable_frms[int(round(gap * temporal_sample_index))]
                 start = fidx - half_clip
             else:
-                temporal_sample_index = e_idx // self.cfg.TEST.NUM_SPATIAL_CROPS
+                temporal_sample_index = e_idx
                 gap = float(max(video_length - clip_length, 0)) / (
                     self.cfg.TEST.NUM_ENSEMBLE_VIEWS - 1
                 )
@@ -229,14 +231,11 @@ class KDX(torch.utils.data.Dataset):
         
         # --- Perform spatial sampling -----------------------------------------------
         if e_idx == -1:
-            spatial_sample_index = -1
             min_scale, max_scale = self.cfg.DATA.TRAIN_JITTER_SCALES
             crop_size = self.cfg.DATA.TRAIN_CROP_SIZE
         elif e_idx == -2:
-            spatial_sample_index = 1
             min_scale, max_scale, crop_size = 256, 256, self.cfg.DATA.TRAIN_CROP_SIZE
         else:
-            spatial_sample_index = e_idx % self.cfg.TEST.NUM_SPATIAL_CROPS
             min_scale, max_scale, crop_size = [self.cfg.DATA.TEST_CROP_SIZE] * 3
         frames, boxes = transform.random_short_side_scale_jitter(
              frames,
