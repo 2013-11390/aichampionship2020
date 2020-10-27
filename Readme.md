@@ -35,9 +35,9 @@ python dataset/download_vid.py --input_csv PATH_TO_DATA_CSV --output_dir PATH_TO
 
 - Extract frames from videos
 This will extract frames from video clips into PATH_TO_FRAMES (30fps). 
-Then resize images into minimum side length as 255.
+Then resize images into minimum side length as CROP_SIZE.
 ```
-python dataset/extract_frames.py --vid PATH_TO_VID --output_dir PATH_TO_FRAME
+python dataset/extract_frames.py --vid PATH_TO_VID --output_dir PATH_TO_FRAME --im_size CROP_SIZE
 ```
 
 - Make annotation file, We random split dataset into train, val, test as 70%, 10%, 20% respectively.
@@ -70,4 +70,9 @@ The checkpoint will save in logdir/TAG
 - Run test.py (use TAG for testing model saved in logdir/TAG)
 ```
 python test.py --cfg TEST_YAML_PATH --tag TAG --test_tag TEST_TAG
+```
+
+- To create .csv file for sumission using test_dir DIR1, DIR2, ... then run test_csv.py
+```
+python test_csv.py --test_dirs DIR1 DIR2 ...
 ```
