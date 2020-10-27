@@ -3,14 +3,26 @@ import torch
 import json
 import pandas as pd
 import os
+import argparse
 import slowfast.utils.metrics as metrics
 
-test_dirs = [
-#    'slow_8x8_R50/test_1',
-    'slowfast_8x8_r50_adam_warmup/test_2',
-    'slowfast_8x8_r50_aw_focal/test_1',
-#    'slowfast_8x8_r50_sample/test_1'
-]
+
+parser = argparse.ArgumentParser(
+    description="Make csv file."
+)
+parser.add_argument(
+    '--test_dirs',
+    type=str, nargs='+',
+    default=['slowfast_r101/test_3x10',
+            # 'slowfast_r101_focal/test_3x10',
+            # 'slowfast_r101_sample160/test_3x10'
+            ],
+    help='Test dirs to make csv'
+)
+
+args = parser.parse_args()
+
+test_dirs = args.test_dirs
 
 with open('./data/test_anno.json', 'r') as f:
     test_anno_json = json.load(f)
@@ -31,11 +43,17 @@ for test_dir in test_dirs:
 labels_torch = torch.LongTensor(labels)
 top1_tensor, top2_tensor = metrics.topks_correct(pred_logits, labels_torch, (1, 2))
 print_str = "top1: %.5f top2: %.5f\n"%(top1_tensor.mean(), top2_tensor.mean())
+anno5_right_1, anno5_right_2, anno5_num = 0, 0, 0
 for lidx, name in enumerate(label_class):
     mask = (labels_torch == lidx).float()
     top1 = (top1_tensor * mask).sum() / mask.sum()
     top2 = (top2_tensor * mask).sum() / mask.sum()
     print_str += name + " top1: %.5f top2: %.5f num: %d\n"%(top1, top2, mask.sum())
+    if label_class[lidx] in  ['서있다','걷다','뛰다','앉아있다','누워있다']:
+        anno5_right_1 += (top1_tensor * mask).sum()
+        anno5_right_2 += (top2_tensor * mask).sum()
+        anno5_num += mask.sum()
+print("anno5 top1: %.5f top2: %.5f"%(anno5_right_1/anno5_num, anno5_right_2/anno5_num))
 print(print_str)
 
 # Make test csv
