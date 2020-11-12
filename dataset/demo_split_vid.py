@@ -105,7 +105,7 @@ if __name__ == '__main__':
                          'label,youtube_id,time_start,time_end'))
     p.add_argument('--input_xlsx', type=str, default='./data_demo/KDX_YoutubeData.xlsx',
                    help=('xlsx file containing the program info'))
-    p.add_argument('--tmp_dir', type=str, default='./data_demo/tmp',
+    p.add_argument('--tmp_dir', type=str, default='./data_demo/raw_videos',
                    help=('Output directory where raw videos are saved'))
     p.add_argument('--out_dir', type=str, default='./data_demo/videos',
                    help='Output directory where splitted video will be saved.')
