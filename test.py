@@ -118,7 +118,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--tag",
         help="tag",
-        default="slowfast_8x8_r50",
+        default="slowfast_r101",
         type=str,
     )
     parser.add_argument(
