@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import json
 import random
 import os
+from glob import glob
 import argparse
 random.seed(2020)
 
@@ -36,7 +37,8 @@ def main(input_csv, frame_dir, output_dir):
     # Check available
     data_ = {}
     for vid in data:
-        if os.path.exists(os.path.join(frame_dir, vid)):
+        #if os.path.exists(os.path.join(frame_dir, vid)):
+        if len(glob(os.path.join(frame_dir, vid, '*'))) > 0:
             data_[vid] = data[vid]
     data = data_
     print("After collecting availables", len(data))
