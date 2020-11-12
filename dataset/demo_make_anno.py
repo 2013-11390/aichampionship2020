@@ -6,7 +6,6 @@ import json
 import random
 import os
 import argparse
-from IPython.display import Video
 random.seed(2020)
 
 def main(input_csv, frame_dir, output_dir):
