@@ -73,7 +73,7 @@ def perform_test(test_dloader, model, cfg):
             vid2logits[vid] = vid2logits[vid] / ens_number
         preds = vid2logits[vid].unsqueeze(0)
         labels = vid2label[vid].unsqueeze(0)
-        top1_tensor, top5_tensor = metrics.topks_correct(preds, labels, (1, 2))
+        top1_tensor, top2_tensor = metrics.topks_correct(preds, labels, (1, 2))
         results['top1'] += top1_tensor.tolist()
         results['top2'] += top2_tensor.tolist()
         #results['top1_'+idx2label[labels[0]]] += top1_tensor.tolist()
